@@ -1,12 +1,24 @@
-import { Request } from "express";
+import { Request, Response } from "express";
 //request method types
-export interface User extends Request{
-    id?:string,
-    username:string,
-    password:string,
-    created_at?:string
+export interface User {
+    id?: string,
+    username: string,
+    password: string,
+    created_at?: string
 }
-export interface UserToken extends Request{
-    id:string,
-    username:string
+export interface UserToken {
+    id: string,
+    username: string
+}
+//Respanse types
+export interface LoginResponse {
+    success: boolean;
+    data: {
+        message: string;
+        userId?: string ;
+    };
+}
+export interface LoginBody {
+    username: string;
+    password: string;
 }
