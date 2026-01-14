@@ -22,3 +22,11 @@ export interface LoginBody {
     username: string;
     password: string;
 }
+
+// Add to your existing types
+export interface JWTPayload {
+    userId: string;
+    username: string;
+    iat?: number;
+    exp?: number;
+}

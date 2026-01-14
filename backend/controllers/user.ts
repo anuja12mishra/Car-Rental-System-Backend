@@ -1,9 +1,13 @@
 import { Request, Response } from "express";
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { checkUserNameExitOrNot, getUserCredentials, createNewUser } from "../models/user-db-oparation";
-import { LoginBody, LoginResponse } from "../types/User";
-const salt:number = process.env.SALT as unknown as number || 20;
-// ✅ SIGN IN (Login) - Verify existing user
+import { LoginBody, LoginResponse, JWTPayload, User } from "../types/User";
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key-change-in-prod';
+const salt = 12; 
+
+// ✅ SIGN IN - Set JWT cookie on success
 export const SignIn = async (
     req: Request<{}, {}, LoginBody>,
     res: Response<LoginResponse>
@@ -18,7 +22,6 @@ export const SignIn = async (
             });
         }
 
-        // 1. Get user credentials
         const user = await getUserCredentials(username);
         if (!user) {
             return res.status(401).json({
@@ -27,7 +30,6 @@ export const SignIn = async (
             });
         }
 
-        // 2. Compare password with stored hash
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({
@@ -35,6 +37,21 @@ export const SignIn = async (
                 data: { message: "Invalid credentials" }
             });
         }
+
+        // ✅ Generate JWT token
+        const tokenPayload: JWTPayload = {
+            userId: user.id,
+            username
+        };
+        const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+
+        // ✅ Set HTTP-only secure cookie
+        res.cookie('authToken', token, {
+            httpOnly: true,      // Prevent JS access (XSS protection)
+            secure: process.env.NODE_ENV === 'production',  // HTTPS only in prod
+            sameSite: 'strict',  // CSRF protection
+            maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days in ms
+        });
 
         res.status(200).json({
             success: true,
@@ -50,7 +67,7 @@ export const SignIn = async (
     }
 };
 
-// ✅ SIGN UP (Register) - Create new user
+// ✅ SIGN UP - Also set JWT cookie
 export const SignUp = async (
     req: Request<{}, {}, LoginBody>,
     res: Response<LoginResponse>
@@ -65,7 +82,6 @@ export const SignUp = async (
             });
         }
 
-        // 1. Check if user already exists
         const userExists = await checkUserNameExitOrNot(username);
         if (userExists) {
             return res.status(400).json({
@@ -74,9 +90,22 @@ export const SignUp = async (
             });
         }
 
-        // 2. Hash password and create user
-        const hashedPassword = await bcrypt.hash(password, salt); 
+        const hashedPassword = await bcrypt.hash(password, salt);
         const userId = await createNewUser(username, hashedPassword);
+
+        // ✅ Generate and set JWT cookie (auto-login after signup)
+        const tokenPayload: JWTPayload = {
+            userId,
+            username
+        };
+        const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+
+        res.cookie('authToken', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
 
         res.status(201).json({
             success: true,
@@ -90,4 +119,13 @@ export const SignUp = async (
             data: { message: error.message || "Registration failed" }
         });
     }
+};
+
+// ✅ Logout - Clear cookie
+export const Logout = (req: Request, res: Response<LoginResponse>) => {
+    res.clearCookie('authToken');
+    res.json({
+        success: true,
+        data: { message: "Logged out successfully" }
+    });
 };
