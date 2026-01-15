@@ -59,7 +59,7 @@ export const SignIn = async (
         });
 
     } catch (error) {
-        console.error('SignIn error:', error);
+
         res.status(500).json({
             success: false,
             data: { message: "Server error" }
@@ -113,7 +113,6 @@ export const SignUp = async (
         });
 
     } catch (error: any) {
-        console.error('SignUp error:', error);
         res.status(500).json({
             success: false,
             data: { message: error.message || "Registration failed" }

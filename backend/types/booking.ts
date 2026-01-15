@@ -1,36 +1,68 @@
-import { UserToken } from "./User"
-//request method types
-export interface Booking{
-    id:string,
-    user_id:string,
-    car_name:string,
-    days:number,
-    rent_per_day:number,
-    status:'booked'|'compeleted'|'cancelled'
-    created_at?:string
+import { Request } from "express";
+
+// Request body types
+export interface CreateBookingBody {
+    carName: string;
+    days: number;
+    rentPerDay: number;
 }
-export interface Book_A_Car extends UserToken{
-    car_name:string,
-    days:number,
-    rent_per_day:number,
+
+export interface UpdateBookingBody {
+    carName?: string;
+    days?: number;
+    rentPerDay?: number;
+    status?: 'booked' | 'completed' | 'cancelled';
 }
-export interface Booking_history extends UserToken{
-    id:string,
-    car_name:string,
-    days:number,
-    rent_per_day:number,
-    status:'booked'|'compeleted'|'cancelled'
-    created_at?:string,
-    total_cost?:number
+
+// Response data types
+export interface Booking {
+    id: string;
+    car_name: string;
+    days: number;
+    rent_per_day: number;
+    status: 'booked' | 'completed' | 'cancelled';
+    total_cost: number;
+    created_at: string;
 }
-export interface User_Booking_Summary{
-    id:string,
-    username:string,
-    total_bookings:number,
-    totalAmountSpent:number
+
+export interface BookingActionResponse {
+    success: boolean;
+    data: {
+        message: string;
+        bookingId?: string;
+        totalCost?: number;
+        booking?: Booking;
+    };
 }
-export interface total_booking_update extends UserToken{
-    car_name?:string,
-    days?:number,
-    rent_per_day?:number,
+
+export interface BookingListResponse {
+    success: boolean;
+    data: Booking[];
+}
+
+export interface BookingSummaryResponse {
+    success: boolean;
+    data: {
+        userId?: string;
+        username?: string;
+        totalBookings?: number;
+        totalAmountSpent?: number;
+    };
+}
+
+export interface AuthRequest<
+    P = {}, 
+    ResBody = any, 
+    ReqBody = any, 
+    ReqQuery = any
+> extends Request<P, ResBody, ReqBody, ReqQuery> {
+    user?: {
+        userId: string;
+        username: string;
+    };
+}
+
+export interface BookingQuery {
+    bookingId?: string;
+    summary?: string;
 }
